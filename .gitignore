@@ -1,0 +1,28 @@
+# credentials
+.env
+.env.*
+!.env.example
+*.p8
+*.pem
+*.key
+profiles.yml
+
+# Python 
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# data
+data/
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# vscode itself
+.vscode/
+Thumbs.db
