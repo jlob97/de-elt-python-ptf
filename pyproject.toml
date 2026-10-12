@@ -1,7 +1,37 @@
 [project]
 name = "de-python-test"
 version = "0.1.0"
-description = "Add your description here"
+description = "Testeo de Librerias y una ETL hecha en Python para Snowflake"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# Familias de reglas que revisa ruff (cada letra es el prefijo de los códigos de error).
+# Ruff por defecto solo usa E y F; aquí sumamos tres más que son estándar en proyectos de DE.
+select = [
+    "E",   # pycodestyle: errores de estilo 
+    "F",   # pyflakes: bugs (imports sin usar, variables no definidas)
+    "I",   # isort: orden de los imports (se arregla solo con `--fix`)
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade: moderniza la sintaxis a la version de Python
+]
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
