@@ -23,7 +23,7 @@ class Report(BaseModel):
 
 class ReportDocument(BaseModel):
     url: str
-    compression_algorithm: str | None = Field(default=None, alias="compression")
+    compression_algorithm: str | None = Field(default=None, alias="compressionAlgorithm")
 
 
 def create_report(
