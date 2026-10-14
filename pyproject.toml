@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
+    "pandas>=3.0.6",
+    "pyarrow>=26.0.0",
     "pydantic>=2.14.1",
     "python-dotenv>=1.2.4",
 ]
@@ -13,6 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
+    "pandas-stubs>=3.0.5.260914",
     "pytest>=9.1.1",
     "ruff>=0.17.0",
 ]
