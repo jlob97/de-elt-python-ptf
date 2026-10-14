@@ -1,4 +1,6 @@
+import csv
 import gzip
+import io
 import logging
 import time
 from datetime import datetime
@@ -50,10 +52,10 @@ def wait_for_report(client: SpApiClient, report_id: str) -> Report:
         response = client.request("GET", f"{REPORTS_PATH}/reports/{report_id}", "getReport")
         report = Report.model_validate(response.json())
 
-        if report.processing_status == "DONE":
+        if report.processing_status in ("DONE", "CANCELLED"):
             return report
-        if report.processing_status in ("CANCELLED", "FATAL"):
-            raise RuntimeError(f"Report {report_id} ended as {report.processing_status}")
+        if report.processing_status == "FATAL":
+            raise RuntimeError(f"Report {report_id} ended as FATAL")
         if time.monotonic() > deadline:
             raise TimeoutError(f"Report {report_id} not ready after {MAX_WAIT_SECONDS}s")
 
@@ -90,7 +92,22 @@ def fetch_report(
     logger.info("Created report %s (%s)", report_id, report_type)
 
     report = wait_for_report(client, report_id)
+    if report.processing_status == "CANCELLED":
+        # Amazon cancels a report by itself when the period has no data
+        logger.warning("Report %s was cancelled: no data for this period", report_id)
+        return b""
+
     if report.report_document_id is None:
         raise RuntimeError(f"Report {report_id} is DONE but has no document id")
 
     return download_report(client, report.report_document_id)
+
+
+def parse_flat_file(data: bytes) -> list[dict[str, str]]:
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = data.decode("cp1252")
+
+    reader = csv.DictReader(io.StringIO(text), delimiter="\t", quoting=csv.QUOTE_NONE)
+    return list(reader)
