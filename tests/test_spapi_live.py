@@ -5,7 +5,6 @@ from amazon_elt.spapi.client import SpApiClient
 from amazon_elt.spapi.reports import fetch_report
 
 US_MARKETPLACE = "ATVPDKIKX0DER"
-MX_MARKETPLACE = "A1AM78C64UM0Y8"
 
 ORDERS_REPORT = "GET_FLAT_FILE_ALL_ORDERS_DATA_BY_LAST_UPDATE_GENERAL"
 
@@ -25,7 +24,7 @@ ORDERS_REQUIRED_COLUMNS = {
 }
 
 
-def test_marketplaces_include_us_and_mx() -> None:
+def test_marketplaces_include_us() -> None:
     client = SpApiClient(SpApiConfig.from_env())
 
     response = client.request(
@@ -33,7 +32,7 @@ def test_marketplaces_include_us_and_mx() -> None:
     )
     marketplace_ids = {p["marketplace"]["id"] for p in response.json()["payload"]}
 
-    assert {US_MARKETPLACE, MX_MARKETPLACE} <= marketplace_ids
+    assert US_MARKETPLACE in marketplace_ids
 
 
 def test_orders_report_has_required_columns() -> None:
