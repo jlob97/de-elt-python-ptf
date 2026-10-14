@@ -1,4 +1,6 @@
+import csv
 import gzip
+import io
 import logging
 import time
 from datetime import datetime
@@ -94,3 +96,12 @@ def fetch_report(
         raise RuntimeError(f"Report {report_id} is DONE but has no document id")
 
     return download_report(client, report.report_document_id)
+
+def parse_flat_file(data: bytes) -> list[dict[str, str]]:
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = data.decode("cp1252")
+
+    reader = csv.DictReader(io.StringIO(text), delimiter="\t", quoting=csv.QUOTE_NONE)
+    return list(reader)
