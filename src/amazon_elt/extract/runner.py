@@ -36,9 +36,13 @@ def extract_report_day(
     logger.info("Wrote %d rows to %s", len(rows), path)
 
 
-def run_report_stream(report_type: str, raw_dir: Path, drop_columns: tuple[str, ...] = ()) -> None:
+def run_report_stream(
+    report_type: str,
+    raw_dir: Path,
+    drop_columns: tuple[str, ...] = (),
+    lookback_days: int = LOOKBACK_DAYS,
+) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    # httpx logs every URL at INFO, and the report download URL is a pre-signed S3 link
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     yesterday = datetime.now(UTC).date() - timedelta(days=1)
@@ -47,7 +51,7 @@ def run_report_stream(report_type: str, raw_dir: Path, drop_columns: tuple[str, 
     parser.add_argument(
         "--start",
         type=date.fromisoformat,
-        default=yesterday - timedelta(days=LOOKBACK_DAYS - 1),
+        default=yesterday - timedelta(days=lookback_days - 1),
     )
     parser.add_argument("--end", type=date.fromisoformat, default=yesterday)
     args = parser.parse_args()
