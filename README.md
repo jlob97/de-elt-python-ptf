@@ -31,8 +31,8 @@ cp .env.example .env   # then fill in your own credentials
 ## Order items extract
 
 ```bash
-uv run python -m amazon_elt.order_items                                       # last 3 days, ending yesterday
-uv run python -m amazon_elt.order_items --start 2026-07-01 --end 2026-09-30   # backfill
+uv run python -m amazon_elt.streams.order_items                               # last 3 days, ending yesterday
+uv run python -m amazon_elt.streams.order_items --start 2026-07-01 --end 2026-09-30   # backfill
 ```
 
 - Source: `GET_FLAT_FILE_ALL_ORDERS_DATA_BY_LAST_UPDATE_GENERAL` (SP-API Reports).
