@@ -10,6 +10,7 @@ dependencies = [
     "pyarrow>=26.0.0",
     "pydantic>=2.14.1",
     "python-dotenv>=1.2.4",
+    "snowflake-connector-python>=4.8.0",
 ]
 
 [dependency-groups]
