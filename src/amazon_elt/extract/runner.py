@@ -25,10 +25,15 @@ def write_day(rows: list[dict[str, str]], raw_dir: Path, day: date) -> None:
     logger.info("Wrote %d rows to %s", len(rows), path)
 
 
+def setup_logging() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # httpx logs every URL at INFO, and report download URLs are pre-signed S3 links
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
 def start_daily_run(description: str, lookback_days: int = LOOKBACK_DAYS) -> list[date]:
     # Turns on logging and reads --start/--end. Returns the days to extract
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    setup_logging()
 
     yesterday = datetime.now(UTC).date() - timedelta(days=1)
 
