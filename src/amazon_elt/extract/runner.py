@@ -25,10 +25,15 @@ def write_day(rows: list[dict[str, str]], raw_dir: Path, day: date) -> None:
     logger.info("Wrote %d rows to %s", len(rows), path)
 
 
+def setup_logging() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # httpx logs every URL at INFO, and report download URLs are pre-signed S3 links
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
 def start_daily_run(description: str, lookback_days: int = LOOKBACK_DAYS) -> list[date]:
     # Turns on logging and reads --start/--end. Returns the days to extract
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+    setup_logging()
 
     yesterday = datetime.now(UTC).date() - timedelta(days=1)
 
@@ -85,5 +90,20 @@ def run_report_stream(
 
     for day in days:
         extract_report_day(client, report_type, config.marketplace_ids, day, raw_dir, drop_columns)
+
+    client.close()
+
+
+def run_report_snapshot(report_type: str, raw_dir: Path) -> None:
+    setup_logging()
+    today = datetime.now(UTC).date()
+
+    config = SpApiConfig.from_env()
+    client = SpApiClient(config)
+
+    # A snapshot report ignores dates, but createReport still wants a range: send the last day
+    start, end = day_window(today - timedelta(days=1))
+    rows = parse_flat_file(fetch_report(client, report_type, config.marketplace_ids, start, end))
+    write_day(rows, raw_dir, today)
 
     client.close()
