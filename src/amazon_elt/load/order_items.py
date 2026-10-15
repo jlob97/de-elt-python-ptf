@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from amazon_elt.config import SnowflakeConfig
-from amazon_elt.snowflake_conn import connect
+from amazon_elt.load.connection import connect
 
 logger = logging.getLogger(__name__)
 

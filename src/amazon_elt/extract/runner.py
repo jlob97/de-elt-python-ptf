@@ -4,9 +4,9 @@ from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
 from amazon_elt.config import SpApiConfig
+from amazon_elt.extract.storage import write_parquet
 from amazon_elt.spapi.client import SpApiClient
 from amazon_elt.spapi.reports import fetch_report, parse_flat_file
-from amazon_elt.storage import write_parquet
 
 logger = logging.getLogger(__name__)
 

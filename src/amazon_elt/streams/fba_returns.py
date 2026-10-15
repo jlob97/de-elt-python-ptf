@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from amazon_elt.extract import run_report_stream
+from amazon_elt.extract.runner import run_report_stream
 
 REPORT_TYPE = "GET_FBA_FULFILLMENT_CUSTOMER_RETURNS_DATA"
 RAW_DIR = Path("data/raw/fba_returns")
