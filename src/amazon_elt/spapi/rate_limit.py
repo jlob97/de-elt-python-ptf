@@ -6,6 +6,7 @@ OPERATION_LIMITS: dict[str, tuple[float, int]] = {
     "getReport": (2.0, 15),
     "getReportDocument": (0.0167, 15),
     "getMarketplaceParticipations": (0.016, 15),
+    "listTransactions": (0.5, 10),
 }
 
 # Safety factor so we can use the API if needed. Easy to change.
