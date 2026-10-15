@@ -92,3 +92,18 @@ def run_report_stream(
         extract_report_day(client, report_type, config.marketplace_ids, day, raw_dir, drop_columns)
 
     client.close()
+
+
+def run_report_snapshot(report_type: str, raw_dir: Path) -> None:
+    setup_logging()
+    today = datetime.now(UTC).date()
+
+    config = SpApiConfig.from_env()
+    client = SpApiClient(config)
+
+    # A snapshot report ignores dates, but createReport still wants a range: send the last day
+    start, end = day_window(today - timedelta(days=1))
+    rows = parse_flat_file(fetch_report(client, report_type, config.marketplace_ids, start, end))
+    write_day(rows, raw_dir, today)
+
+    client.close()
