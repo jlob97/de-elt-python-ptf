@@ -13,41 +13,26 @@ logger = logging.getLogger(__name__)
 LOOKBACK_DAYS = 3
 
 
-def extract_report_day(
-    client: SpApiClient,
-    report_type: str,
-    marketplace_ids: list[str],
-    day: date,
-    raw_dir: Path,
-    drop_columns: tuple[str, ...] = (),
-) -> None:
+def day_window(day: date) -> tuple[datetime, datetime]:
+    # One UTC day: from 00:00 to the next day's 00:00
     start = datetime.combine(day, time(0), tzinfo=UTC)
-    end = start + timedelta(days=1)
+    return start, start + timedelta(days=1)
 
-    data = fetch_report(client, report_type, marketplace_ids, start, end)
-    rows = parse_flat_file(data)
 
-    for row in rows:
-        for column in drop_columns:
-            row.pop(column, None)
-
+def write_day(rows: list[dict[str, str]], raw_dir: Path, day: date) -> None:
     path = raw_dir / f"dt={day.isoformat()}" / f"{raw_dir.name}.parquet"
     write_parquet(rows, path)
     logger.info("Wrote %d rows to %s", len(rows), path)
 
 
-def run_report_stream(
-    report_type: str,
-    raw_dir: Path,
-    drop_columns: tuple[str, ...] = (),
-    lookback_days: int = LOOKBACK_DAYS,
-) -> None:
+def start_daily_run(description: str, lookback_days: int = LOOKBACK_DAYS) -> list[date]:
+    # Turns on logging and reads --start/--end. Returns the days to extract
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     yesterday = datetime.now(UTC).date() - timedelta(days=1)
 
-    parser = argparse.ArgumentParser(description=f"Extract {report_type}, one file per day")
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument(
         "--start",
         type=date.fromisoformat,
@@ -57,14 +42,48 @@ def run_report_stream(
     args = parser.parse_args()
 
     if args.end > yesterday:
-        parser.error("--end must be yesterday or earlier today. is not finished yet")
+        parser.error("--end must be yesterday or earlier (today is not finished yet)")
+
+    days = []
+    day = args.start
+    while day <= args.end:
+        days.append(day)
+        day += timedelta(days=1)
+    return days
+
+
+def extract_report_day(
+    client: SpApiClient,
+    report_type: str,
+    marketplace_ids: list[str],
+    day: date,
+    raw_dir: Path,
+    drop_columns: tuple[str, ...] = (),
+) -> None:
+    start, end = day_window(day)
+
+    data = fetch_report(client, report_type, marketplace_ids, start, end)
+    rows = parse_flat_file(data)
+
+    for row in rows:
+        for column in drop_columns:
+            row.pop(column, None)
+
+    write_day(rows, raw_dir, day)
+
+
+def run_report_stream(
+    report_type: str,
+    raw_dir: Path,
+    drop_columns: tuple[str, ...] = (),
+    lookback_days: int = LOOKBACK_DAYS,
+) -> None:
+    days = start_daily_run(f"Extract {report_type}, one file per day", lookback_days)
 
     config = SpApiConfig.from_env()
     client = SpApiClient(config)
 
-    day = args.start
-    while day <= args.end:
+    for day in days:
         extract_report_day(client, report_type, config.marketplace_ids, day, raw_dir, drop_columns)
-        day += timedelta(days=1)
 
     client.close()
