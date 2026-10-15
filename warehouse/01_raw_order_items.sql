@@ -1,0 +1,19 @@
+
+
+USE ROLE FTC_X; -- Role with privilages 
+USE WAREHOUSE PILOT_WH;
+USE SCHEMA ECOM_DW.RAW;
+
+CREATE FILE FORMAT IF NOT EXISTS PARQUET_FF
+    TYPE = PARQUET;
+
+CREATE STAGE IF NOT EXISTS RAW_STAGE
+    ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');
+
+CREATE TABLE IF NOT EXISTS ORDER_ITEMS (
+    payload          VARIANT,
+    _source_file     VARCHAR,
+    _file_row_number NUMBER,
+    _dt              DATE,
+    _loaded_at       TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
+);
