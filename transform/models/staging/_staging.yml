@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: stg_order_items
+    description: >
+      One row per order line per load, from the all-orders report. US only (sales_channel = Amazon.com).
+      Still has duplicates: the same line arrives again every time Amazon updates it.
+    columns:
+      - name: amazon_order_id
+        description: Amazon order id, like 111-1234567-1234567.
+        data_tests:
+          - not_null
+      - name: order_item_id
+        description: Amazon's id for one line of an order.
+        data_tests:
+          - not_null
+      - name: last_updated_at
+        description: When Amazon last changed this line (UTC). Used to keep the newest version.
+      - name: item_price
+        description: Price charged for the line, in the order currency.
+
+  - name: stg_fba_returns
+    description: One row per returned unit sent back to an Amazon warehouse (FBA).
+    columns:
+      - name: license_plate_number
+        description: Amazon's id for one physical returned unit.
+        data_tests:
+          - not_null
+      - name: amazon_order_id
+        description: The order the unit was bought in. FBA returns have no order_item_id.
+        data_tests:
+          - not_null
+
+  - name: stg_mfn_returns
+    description: One row per return of an order we shipped ourselves (MFN / FBM).
+    columns:
+      - name: amazon_rma_id
+        description: Amazon's return authorization id.
+        data_tests:
+          - not_null
+      - name: order_item_id
+        description: The order line being returned.
+        data_tests:
+          - not_null
+      - name: label_cost
+        description: What we paid for the return shipping label.
+
+  - name: stg_shipments
+    description: One row per shipped item fulfilled by Amazon (FBA). US only (sales_channel = amazon.com).
+    columns:
+      - name: shipment_item_id
+        description: Amazon's id for one item in one shipment.
+        data_tests:
+          - not_null
+      - name: buyer_email_hash
+        description: SHA-256 hash of the buyer email (trimmed, lowercased). The plain email stays in RAW.
+      - name: item_promotion_discount
+        description: Discount on the item. Negative in this report (positive in the orders report).
+
+  - name: stg_listings
+    description: One row per SKU per daily snapshot of the listings report.
+    columns:
+      - name: sku
+        description: Seller SKU.
+        data_tests:
+          - not_null
+      - name: snapshot_date
+        description: The day this snapshot was taken.
+        data_tests:
+          - not_null
+      - name: opened_at_utc
+        description: When the listing was created. The report gives Pacific time; converted to UTC.
+
+  - name: stg_finances
+    description: >
+      One row per financial transaction (Finances API). Fee breakdowns stay as JSON
+      in the items and breakdowns columns.
+    columns:
+      - name: transaction_id
+        description: Amazon's id for the transaction.
+        data_tests:
+          - not_null
+      - name: amazon_order_id
+        description: Order the transaction belongs to, taken from relatedIdentifiers. Empty for some fees.
+      - name: transaction_status
+        description: RELEASED (paid out), DEFERRED (held by Amazon) or DEFERRED_RELEASED.
+      - name: total_amount
+        description: Net amount of the transaction. Negative means money taken from us.
+
+  - name: stg_inventory
+    description: One row per SKU per daily snapshot of FBA inventory.
+    columns:
+      - name: sku
+        description: Seller SKU.
+        data_tests:
+          - not_null
+      - name: fulfillable_quantity
+        description: Units Amazon can sell right now.
+      - name: researching_quantity
+        description: Units Amazon has lost track of and is looking for. Not part of total_quantity.

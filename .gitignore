@@ -5,7 +5,7 @@
 *.p8
 *.pem
 *.key
-profiles.yml
+
 
 # Python 
 __pycache__/

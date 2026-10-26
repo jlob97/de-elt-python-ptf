@@ -1,0 +1,13 @@
+snapshots:
+  - name: listings_snapshot
+    description: >
+      History of every listing (SCD type 2). A new version is saved when price, status,
+      fulfillment channel or quantity changes; dbt_valid_from / dbt_valid_to show when
+      each version was current. A SKU that leaves the listings report gets its version closed.
+    relation: ref('int_listings_current')
+    config:
+      schema: snapshots
+      unique_key: sku
+      strategy: check
+      check_cols: [price, listing_status, fulfillment_channel, quantity]
+      hard_deletes: invalidate
