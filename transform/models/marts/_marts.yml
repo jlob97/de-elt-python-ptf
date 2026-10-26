@@ -1,0 +1,154 @@
+version: 2
+
+models:
+  - name: fct_order_items
+    description: >
+      One row per US order line (latest version). Incremental: merges lines updated in the last 3 days.
+      Returns are in fct_returns.
+    columns:
+      - name: order_item_id
+        description: Amazon's id for one line of an order. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: amazon_order_id
+        description: Amazon order id, like 111-1234567-1234567.
+        data_tests:
+          - not_null
+      - name: sku
+        description: Seller SKU. Joins to item_mst.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('item_mst')
+                field: sku
+      - name: order_status
+        description: Order status from Amazon. Warns if Amazon sends a status we have not seen before.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - Pending
+                  - Shipped
+                  - Shipped - Delivered to Buyer
+                  - Shipped - Picked Up
+                  - Shipped - Waiting for Pick Up
+                  - Cancelled
+              config:
+                severity: warn
+
+  - name: fct_returns
+    description: >
+      One row per return line, FBA and MFN together, US only.
+      return_date is when the unit reached Amazon's warehouse (FBA) or when the buyer asked to return it (MFN).
+    columns:
+      - name: return_id
+        description: FBA- plus the license plate number, or MFN- plus the RMA id and order item id. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: return_channel
+        description: FBA (returned to an Amazon warehouse) or MFN (an order we shipped ourselves).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['FBA', 'MFN']
+      - name: amazon_order_id
+        description: The order the unit was bought in.
+        data_tests:
+          - not_null
+      - name: sku
+        description: Seller SKU.
+        data_tests:
+          - not_null
+      - name: order_date
+        description: Purchase date. From the MFN report, or from loaded orders for FBA; empty when the order is older than the loaded history.
+
+  - name: fct_shipments
+    description: One row per item shipped by Amazon (FBA), US only. No street address or postal code.
+    columns:
+      - name: shipment_item_id
+        description: Amazon's id for one item in one shipment. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: sku
+        description: Seller SKU.
+        data_tests:
+          - not_null
+      - name: hours_to_ship
+        description: Hours from purchase to shipment.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+
+  - name: fct_financial_transactions
+    description: >
+      One row per financial transaction (order payment, refund, fee), US marketplace.
+      Incremental: merges transactions posted in the last 30 days, so status changes are picked up.
+    columns:
+      - name: transaction_id
+        description: Amazon's id for the transaction. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: transaction_status
+        description: RELEASED (paid out), DEFERRED (held by Amazon) or DEFERRED_RELEASED.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['RELEASED', 'DEFERRED', 'DEFERRED_RELEASED']
+              config:
+                severity: warn
+      - name: sales_amount
+        description: The sales side of the transaction (Sales or Refunded Sales).
+      - name: expenses_amount
+        description: Amazon's fees and other expenses (Expenses or Refunded Expenses). Usually negative.
+      - name: total_amount
+        description: Net amount. Equals sales_amount + expenses_amount.
+
+  - name: fct_inventory_daily
+    description: One row per SKU per snapshot day of FBA inventory.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [sku, snapshot_date]
+    columns:
+      - name: snapshot_date
+        description: The day the snapshot was taken.
+        data_tests:
+          - not_null
+      - name: sku
+        description: Seller SKU.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('item_mst')
+                field: sku
+      - name: is_in_stock
+        description: True when Amazon has at least one unit it can sell right now.
+
+  - name: item_mst
+    description: One row per SKU, from the latest listings and FBA inventory snapshots.
+    columns:
+      - name: sku
+        description: Seller SKU. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: is_in_listings
+        description: True when the SKU is in the latest listings report.
+      - name: is_in_fba_inventory
+        description: True when the SKU is in the latest FBA inventory snapshot.
+
+  - name: dim_date
+    description: One row per calendar day from 2024-01-01 to one year ahead. Weeks start on Monday.
+    columns:
+      - name: date_day
+        description: The calendar day. Primary key.
+        data_tests:
+          - unique
+          - not_null

@@ -45,13 +45,31 @@ uv run python -m amazon_elt.streams.order_items --start 2026-07-01 --end 2026-09
   filter in North America, so the US filter (`sales-channel = 'Amazon.com'`) and the dedupe
   (latest `last-updated-date` per order line) happen in dbt.
 
+## Transform (dbt)
+
+```bash
+uv run --env-file .env dbt build --project-dir transform --profiles-dir transform
+```
+
+- `staging`: one view per raw table (unpack JSON, rename, cast types, US only).
+- `intermediate`: `int_order_items_latest` (newest version of each order line) and
+  `int_listings_current` (today's listings, one row per SKU).
+- `marts`: `fct_order_items`, `fct_returns`, `fct_shipments`, `fct_financial_transactions`,
+  `fct_inventory_daily`, `item_mst`, `dim_date`.
+- `fct_order_items` and `fct_financial_transactions` are incremental (merge on their id, with a
+  3-day and a 30-day lookback), so a daily run only reprocesses recent rows.
+- `listings_snapshot` keeps the history of each listing's price, status, channel and quantity (SCD type 2).
+- 46 data tests (unique, not_null, relationships, accepted_values, dbt_utils and singular tests),
+  1 unit test, and source freshness checks (warn after 1 day, error after 2).
+- `profiles.yml` reads every connection value from environment variables, so it holds no secrets.
+
 ## Progress
 
 - [x] Project scaffold + tooling
 - [x] SP-API client
-- [x] Order items extractor
-- [ ] Load to Snowflake RAW
-- [ ] dbt models
+- [x] Extractors: order items, FBA + MFN returns, finances, inventory, listings, shipments
+- [x] Load to Snowflake RAW
+- [x] dbt: staging, intermediate and marts, tests and docs, incremental models and a listings snapshot
 - [ ] CI
 - [ ] Airflow DAG
 

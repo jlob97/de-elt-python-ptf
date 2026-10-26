@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw Amazon SP-API data loaded by the Python loader (src/amazon_elt/load).
+    schema: RAW
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 1, period: day}
+        error_after: {count: 2, period: day}
+
+    tables:
+      - name: order_items
+        description: All orders report (BY_LAST_UPDATE), one row per order item per load.
+      - name: fba_returns
+        description: FBA customer returns report.
+      - name: mfn_returns
+        description: Merchant-fulfilled returns report (by return date).
+      - name: finances
+        description: Finances API transactions, one JSON transaction per row.
+      - name: inventory
+        description: FBA inventory summaries snapshot, one JSON summary per row.
+      - name: listings
+        description: All listings report snapshot.
+      - name: shipments
+        description: Amazon-fulfilled shipments report. Contains buyer PII.
